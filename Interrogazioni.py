@@ -1,12 +1,41 @@
 import random
+from datetime import date
+
+#### DATI DI ESEMPIO ####
 
 a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z = "abcdefghjklmnopqrstuvwxyz" # nomi dei volontari
-days_num = {"12/30":3, "12/31":3, "1/1":2, "1/2":3, "1/3":2, "1/4":3, "1/5":3, "1/6":3, "1/7":3} # interrogati per giorno
-days_vol = {"12/30":[h, j, k, l, m, n, o, p, q, r], "12/31":[s], "1/1":[a, b, c], "1/2":[d],
-            "1/3":[e, f, g], "1/4":[t, u], "1/5":[], "1/6":[v, w], "1/7":[x, y, z]} # preferenze dei volontari
+days_num = {date(2021, 12, 30):3, date(2021, 12, 31):3, date(2022, 1, 1):2, date(2022, 1, 2):3, date(2022, 1, 3):2,
+            date(2022, 1, 4):3, date(2022, 1, 5):3, date(2022, 1, 6):3, date(2022, 1, 7):3} # interrogati per giorno
+days_vol = {date(2021, 12, 30):[h, j, k, l, m, n, o, p, q, r], date(2021, 12, 31):[s], date(2022, 1, 1):[a, b, c],
+            date(2022, 1, 2):[d], date(2022, 1, 3):[e, f, g], date(2022, 1, 4):[t, u],
+            date(2022, 1, 5):[], date(2022, 1, 6):[v, w], date(2022, 1, 7):[x, y, z]} # preferenze dei volontari
 vol_priority = {0:[a, b, c, d, e, f, g, h, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z]} # priorità dei volontari
+
+#########################
+
 ok = False
 days = tuple(days_num.keys())
+
+class Vol(): # verrà usata per riorganizzare i dati
+    def __init__(self, name: str, preferences: list, priority: int, available_days):
+        self.name = name # nome del volontario
+        self.pref = preferences # giorni preferiti
+        self.prio = priority # priorità, ovvero distanza dalla preferenza
+        self.days = available_days # giorni in cui può essere interrogato
+        self.day = preferences[0] # giorno in cui è posizionato
+    
+    def sort_by_pref(self, ds, prfs): # ordina i giorni in cui può essere interrogato dal preferito al meno
+        sorted_days = []
+        i = 0
+        while ds.len() > sorted_days.len():
+            for d in ds:
+                for p in prfs:
+                    if abs((p-d).days) != i:
+                        continue
+                    else:
+                        if not d in sorted_days: # controlla di non aver già inserito il giorno
+                            sorted_days.append(d)
+            i += 1
 
 def main():
     global ok
