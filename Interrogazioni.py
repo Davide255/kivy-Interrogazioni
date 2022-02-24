@@ -1,6 +1,5 @@
 import random
 from datetime import date
-import uuid
 
 #### DATI DI ESEMPIO ####
 
