@@ -6,7 +6,7 @@ Calendar for Kivy based on KivyCalendar made by Oleg Kozlov
 
 '''
 
-import logging
+import logging, os
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.properties import (
@@ -31,6 +31,8 @@ from kivy.uix.togglebutton import ToggleButtonBehavior
 from kivy.uix.widget import Widget
 
 from . import calendar_data as cal_data
+from kivy.resources import resource_add_path
+resource_add_path(os.path.abspath(os.path.dirname(__file__)))
 
 
 Builder.load_string("""

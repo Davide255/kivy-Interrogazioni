@@ -16,7 +16,7 @@ from kivymd.uix.navigationdrawer import MDNavigationDrawer, MDNavigationLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivy.core.window import Window
 from kivymd.theming import ThemeManager
-from Widgets import pakedWidget
+from Widgets.Widget import pakedWidget
 
 
 class App(MDApp):
@@ -58,7 +58,7 @@ class App(MDApp):
         sv = ScrollView()
         lst = MDList()
 
-        from Widgets import Add_Dialog
+        from Widgets.Widget import Add_Dialog
         items = [
             OneLineListItem(text='Crea una nuova lista', 
                 on_release= lambda *args: [
@@ -154,7 +154,7 @@ class Show_List(App):
             self.working.screen = Screen(name = self.title)
 
     def _update(self):
-        from Widgets import Calendar
+        from Widgets.calendar_widget.calendar_ui import Calendar
         self._load_screen()
         self.working.calendar = Calendar(event_handler=self._update_screen)
         self.working.box = BoxLayout(orientation = 'vertical')
@@ -186,7 +186,7 @@ class Show_List(App):
 
 class Lists(App):
     def build(self, only_cards=False):
-        from Widgets import pakedWidget
+        from Widgets.Widget import pakedWidget
         if not only_cards:
             main = Screen(name='main')
             box = pakedWidget().boxlayout()
@@ -220,7 +220,7 @@ class Lists(App):
         btn = MDFloatingActionButton(icon='plus')
         btn.icon_size='34sp'
         btn.pos_hint={'center_x':.93, 'center_y':.2}
-        from Widgets import Add_Dialog
+        from Widgets.Widget import Add_Dialog
         btn.bind(on_release=lambda *args: Lists()._change_screen(Add_Dialog().wait, 'preferences',**App.new_list_dialog))
         box.add_widget(btn)
         main.add_widget(box)
@@ -299,9 +299,9 @@ class Loading_screen:
 class Preferences(App):
     def build(self):
         preferences = Screen(name = 'preferences')
-        from Widgets import pakedWidget
+        from Widgets.Widget import pakedWidget
         box = pakedWidget().boxlayout()
-        from Widgets import Menu
+        from Widgets.Widget import Menu
         m_args = {}
         tb = pakedWidget().toolbar('Preferenze', lambda *args: Menu().open(**m_args))
         box.add_widget(tb)
@@ -313,7 +313,7 @@ class Preferences(App):
         return preferences
 
     def vol_dialog(self, *args):
-        from Widgets import Add_Dialog
+        from Widgets.Widget import Add_Dialog
         d_args = {
             'title':'Inserisci i dati del volontario',
             't_txt':'Name',
