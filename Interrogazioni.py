@@ -52,6 +52,9 @@ class Student: # verrà usata per riorganizzare i dati
     def __iter__(self):
         self.ind = -1
 
+    def __repr__(self) -> str:
+        return '<Student object, name={}>'.format(self.name)
+
     def __next__(self):
         self.ind =+ 1
         if self.ind == len(self.pref):
@@ -126,9 +129,7 @@ class Interr:
                 for s in m:
                     for d in s:
                         if d[2]:
-                            #print(d, month, i)
                             self.dates.append(date(self.quarter_nums[0][0], month, d[0]))
-                #print('end month')
                 i += 1
 
             return self.dates
@@ -146,14 +147,13 @@ class Interr:
             for i in names_and_pref:
                 for p in names_and_pref[i]:
                     self.__data_alloc__(p, _list[i])
-            print(self.pref_calendar)
             return self.pref_calendar
 
         datas = Property(_data_repr, lambda *args: None)
 
     def create_sheet_new(self):
-        #self.test()
-        self.program = dict() # initiallize the variable
+        #self.test() 
+        program = dict()
         _students = self.pref_calendar.copy() # get a mutable sequence of the preferences
         _missing = list() # initiallize a list when will be stored the missing students
 
@@ -161,17 +161,17 @@ class Interr:
                                        # dict format = { date(**kwargs) : list( Student(**kwargs) ) }
             if len(_students[day]) > days_num[day]: # if there are too many students for a single day:
                 
-                self.program[day] = list() # initiallize the day's space to tell python that value will 
-                                           # be a list() object
+                program[day] = list() # initiallize the day's space to tell python that value will 
+                                      # be a list() object
 
                 for c in range(int(days_num[day])): # itering for a specific number of times
 
-                    self.program[day].append(_students[day].pop(random.randint(0, len(_students)-c))) # random choose the student that will 
-                                                                                                      # pass on required day
+                    program[day].append(_students[day].pop(random.randint(0, len(_students)-c))) # random choose the student that will 
+                                                                                                 # pass on required day
                 _missing = _students[day] # saving missing students for later
 
             else: # if students are equal or less for the day those will be satisfied 
-                self.program[day] = _students[day]
+                program[day] = _students[day]
 
             _students.pop(day, 0)
         
@@ -180,15 +180,27 @@ class Interr:
             _free = list()
 
             for d in days_num: # get free days
-                if len(self.program[d]) < days_num[d]:
-                    _free.append((d, days_num[d] - len(self.program[d])))
-                else:
-                    pass
+                try:
+                    if len(program[d]) < days_num[d]:
+                        _free.append([d, days_num[d] - len(program[d])])
+                    else:
+                        pass
+                except KeyError:
+                    _free.append([d, days_num[d]])
+            
+            '''for i in program:
+                for s in program[i]:
+                    print(s.name)'''
+            print(program)
 
+            return
+            for c in len(_missing):
+                day = random.choice(_free)
 
+            return program
         else:
-            print(self.program)
-            return self.program
+            print(program)
+            return program
 
     program = Property(create_sheet_new, lambda *args: None)
 
