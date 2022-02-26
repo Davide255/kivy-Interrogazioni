@@ -8,7 +8,7 @@ names_and_pref = {
     'Davide':[date(2022, 2, 12), date(2022, 2, 17)], 
     'Filippo':[date(2022, 2, 13), date(2022, 2, 19)],
     'Gino':[date(2022, 2, 12), date(2022, 2, 17)], 
-    'Poalo':[date(2022, 2, 13), date(2022, 2, 19)],
+    'Paolo':[date(2022, 2, 13), date(2022, 2, 19)],
     'Giovanni':[date(2022, 2, 12), date(2022, 2, 17)], 
     'Pietro':[date(2022, 2, 13), date(2022, 2, 19)],
     'Alessandra':[date(2022, 2, 12), date(2022, 2, 17)], 
@@ -17,15 +17,8 @@ names_and_pref = {
 
 days_num = {date(2022, 2, 12):2, date(2022, 2, 17):1, date(2022, 2, 13):1, date(2022, 2, 19):2, date(2022, 2, 1):2}
 
-'''days_num = {date(2021, 12, 30):3, date(2021, 12, 31):3, date(2022, 1, 1):2, date(2022, 1, 2):3, date(2022, 1, 3):2,
-            date(2022, 1, 4):3, date(2022, 1, 5):3, date(2022, 1, 6):3, date(2022, 1, 7):3} # interrogati per giorno
-'''
-a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z = "abcdefghjklmnopqrstuvwxyz" # nomi dei volontari
-vol_priority = {0:[a, b, c, d, e, f, g, h, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z]} # priorità dei volontari
-
 #########################
 
-ok = False
 days = tuple(days_num.keys())
 
 class Student: # verrà usata per riorganizzare i dati
@@ -34,7 +27,7 @@ class Student: # verrà usata per riorganizzare i dati
         self.pref = preferences # giorni preferiti
         self.prio = priority # priorità, ovvero distanza dalla preferenza
         self.days = available_days # giorni in cui può essere interrogato
-        self.day = preferences[0] # giorno in cui è posizionato
+        self.day = None # giorno in cui è posizionato
     
     def sort_by_pref(self, ds, prfs): # ordina i giorni in cui può essere interrogato dal preferito al meno
         sorted_days = []
@@ -74,7 +67,7 @@ class Property(object):
     def __set__(self, instance, value):
         return self.fset(instance,value)
 
-class Interr:
+class Interr(object):
 
     vols = dict()
 
@@ -151,12 +144,13 @@ class Interr:
 
         datas = Property(_data_repr, lambda *args: None)
 
-    def create_sheet_new(self):
+    def create_sheet(self):
         #self.test() 
+        if hasattr(self, '__cache__'):
+            return self.__cache__
         program = dict()
         _students = self.pref_calendar.copy() # get a mutable sequence of the preferences
-        _missing = list() # initiallize a list when will be stored the missing students
-
+        
         for day in self.pref_calendar: # iter single days in preferences dict keys; 
                                        # dict format = { date(**kwargs) : list( Student(**kwargs) ) }
             if len(_students[day]) > days_num[day]: # if there are too many students for a single day:
@@ -164,20 +158,33 @@ class Interr:
                 program[day] = list() # initiallize the day's space to tell python that value will 
                                       # be a list() object
 
-                for c in range(int(days_num[day])): # itering for a specific number of times
-
-                    program[day].append(_students[day].pop(random.randint(0, len(_students)-c))) # random choose the student that will 
-                                                                                                 # pass on required day
-                _missing = _students[day] # saving missing students for later
+                for c in range(int(days_num[day])): #  itering for a specific number of times
+                    r = random.randint(0, len(_students)-c)
+                    _s = _students[day].pop(r)
+                    while True:
+                        if not _s.day:
+                            program[day].append(_s) # random choose the student that will 
+                                                    # pass on required day
+                            _s.day = day
+                            break
+                        else:
+                            r = random.randint(0, len(_students)-c)
+                            _s = _students[day].pop(r)
 
             else: # if students are equal or less for the day those will be satisfied 
                 program[day] = _students[day]
 
             _students.pop(day, 0)
         
-        if len(_missing) > 0: # if there are some students missing
-            
-            _free = list()
+        _missing = list()
+
+        for i in self.vols: # get missing students
+            if not self.vols[i].day:
+                _missing.append(self.vols[i])
+
+        if len(_missing): # if there are missing
+
+            _free = list() # free days struct = [ [date(**kwargs), int(free_places)] ]
 
             for d in days_num: # get free days
                 try:
@@ -187,74 +194,85 @@ class Interr:
                         pass
                 except KeyError:
                     _free.append([d, days_num[d]])
-            
-            '''for i in program:
-                for s in program[i]:
-                    print(s.name)'''
-            print(program)
 
-            return
-            for c in len(_missing):
-                day = random.choice(_free)
+            if len(_free) == 1 and len(_missing) == _free[0][1]: # if there is only one day free and day[free_places] students
+                program[_free[0][0]] = _missing                  # put all those students in this day
 
-            return program
-        else:
-            print(program)
-            return program
+            else: # else randomically extract the students in the day
 
-    program = Property(create_sheet_new, lambda *args: None)
-
-    def create_sheet_old_algorithm(self):
-        global ok
-        self.test()
-        while ok == False:
-            for day in days_vol:
-                day_n = days_num[day]
-                priority = 0
-                while len(days_vol[day]) > day_n:
-                    minor_priority = []
-                    for i in days_vol[day]:
-                        if i in vol_priority[priority]:
-                            minor_priority.append(i)
-                    if len(minor_priority) != 0:
-                        rem = minor_priority.pop(minor_priority.index(random.choice(minor_priority)))
-                        days_vol[day].remove(rem)
-                        vol_priority[priority].remove(rem)
-                        try:
-                            vol_priority[priority+1].append(rem)
-                        except KeyError:
-                            vol_priority[priority+1] = []
-                            vol_priority[priority+1].append(rem)
-                        try: # prova a spostare un interrogato a caso al giorno successivo
-                            days_vol[days[days.index(day)+1]].append(rem)
-                        except IndexError: # sposta l'interrogato al giorno precedente
-                            days_vol[days[days.index(day)-1]].append(rem)
+                for _s in _missing:
+                    day = random.choice(_free)
+                    program[day[0]] = _s
+                    if day[1] == 1:
+                        _free.pop(day)
                     else:
-                        priority += 1
-            self._check()
-        print(days_vol)
-        print(vol_priority)
+                        _free[day][1] -= 1
 
-    def test(self):
-        """checks if there are enaugh days for the volunteers"""
-        n = 0
-        m = 0
-        for d in days_num:
-            n += days_num[d]
-        for e in self.pref_calendar:
-            m += len(self.pref_calendar[e])
-        if m > n:
-            class TooManyVolunteers(BaseException):
-                pass
-            raise TooManyVolunteers("Too many volunteers, check again")
+        self.__cache__ = program
+        return program
 
-    def _check(self):
-        """checks if there are too many volunteers in a day"""
-        global days_vol, days_num, ok
-        ok = True
-        for day in days_num:
-            if len(days_vol[day]) > days_num[day]:
-                ok = False
+    program = Property(create_sheet, lambda *args: None) # handle to create_sheet function
+
+    class Decrepited:
+
+        a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z = "abcdefghjklmnopqrstuvwxyz" # nomi dei volontari
+        vol_priority = {0:[a, b, c, d, e, f, g, h, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z]} # priorità dei volontari
+
+        ok = False
+        days_num = {date(2021, 12, 30):3, date(2021, 12, 31):3, date(2022, 1, 1):2, date(2022, 1, 2):3, date(2022, 1, 3):2,
+                    date(2022, 1, 4):3, date(2022, 1, 5):3, date(2022, 1, 6):3, date(2022, 1, 7):3} # interrogati per giorno
+        days_vol = {date(2021, 12, 30):[h, j, k, l, m, n, o, p, q, r], date(2021, 12, 31):[s], date(2022, 1, 1):[a, b, c],
+                    date(2022, 1, 2):[d], date(2022, 1, 3):[e, f, g], date(2022, 1, 4):[t, u],
+                    date(2022, 1, 5):[], date(2022, 1, 6):[v, w], date(2022, 1, 7):[x, y, z]} # preferenze dei volontari
+
+        def create_sheet_old_algorithm(self):
+            self.test()
+            while self.ok == False:
+                for day in self.days_vol:
+                    day_n = days_num[day]
+                    priority = 0
+                    while len(self.days_vol[day]) > day_n:
+                        minor_priority = []
+                        for i in self.days_vol[day]:
+                            if i in self.vol_priority[priority]:
+                                minor_priority.append(i)
+                        if len(minor_priority) != 0:
+                            rem = minor_priority.pop(minor_priority.index(random.choice(minor_priority)))
+                            self.days_vol[day].remove(rem)
+                            self.vol_priority[priority].remove(rem)
+                            try:
+                                self.vol_priority[priority+1].append(rem)
+                            except KeyError:
+                                self.vol_priority[priority+1] = []
+                                self.vol_priority[priority+1].append(rem)
+                            try: # prova a spostare un interrogato a caso al giorno successivo
+                                self.days_vol[days[days.index(day)+1]].append(rem)
+                            except IndexError: # sposta l'interrogato al giorno precedente
+                                self.days_vol[days[days.index(day)-1]].append(rem)
+                        else:
+                            priority += 1
+                self._check()
+            print(self.days_vol)
+            print(self.vol_priority)
+
+        def test(self):
+            """checks if there are enaugh days for the volunteers"""
+            n = 0
+            m = 0
+            for d in self.days_num:
+                n += self.days_num[d]
+            for e in self.days_vol:
+                m += len(self.days_vol[e])
+            if m > n:
+                class TooManyVolunteers(BaseException):
+                    pass
+                raise TooManyVolunteers("Too many volunteers, check again")
+
+        def _check(self):
+            """checks if there are too many volunteers in a day"""
+            self.ok = True
+            for day in days_num:
+                if len(self.days_vol[day]) > days_num[day]:
+                    ok = False
 
 interr = Interr()
-interr.create_sheet_new()
