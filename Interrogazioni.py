@@ -276,3 +276,4 @@ class Interr(object):
                     ok = False
 
 interr = Interr()
+print(interr.program)
