@@ -15,19 +15,18 @@ names_and_pref = {
     'Chiara':[date(2022, 2, 13), date(2022, 2, 19)]
     }
 
-days_num = {date(2022, 2, 12):2, date(2022, 2, 17):1, date(2022, 2, 13):1, date(2022, 2, 19):2, date(2022, 2, 1):2}
+days_num = {date(2022, 2, 12):2, date(2022, 2, 17):1, date(2022, 2, 13):1, date(2022, 2, 19):2, date(2022, 2, 1):1, date(2022, 2, 2):1}
 
 #########################
 
 days = tuple(days_num.keys())
 
 class Student: # verrà usata per riorganizzare i dati
-    def __init__(self, name: str, preferences: list, priority: int, available_days=None):
+    def __init__(self, name: str, preferences: list, priority: int = 0):
         self.name = name # nome del volontario
         self.pref = preferences # giorni preferiti
         self.prio = priority # priorità, ovvero distanza dalla preferenza
-        self.days = available_days # giorni in cui può essere interrogato
-        self.day = None # giorno in cui è posizionato
+        self.day = None # giorno in cui è posizionato; se None lo studente non è posizionato in alcun giorno
     
     def sort_by_pref(self, ds, prfs): # ordina i giorni in cui può essere interrogato dal preferito al meno
         sorted_days = []
@@ -46,7 +45,7 @@ class Student: # verrà usata per riorganizzare i dati
         self.ind = -1
 
     def __repr__(self) -> str:
-        return '<Student object, name={}>'.format(self.name)
+        return '<Student {}>'.format(self.name)
 
     def __next__(self):
         self.ind =+ 1
@@ -73,7 +72,7 @@ class Interr(object):
 
     def __init__(self) -> None:
         for i in names_and_pref:
-            exec('if not hasattr(Interr, \'%s\'):\n\tself.%s = Student(i, names_and_pref[i], 0)\n\tInterr.vols[i] = self.%s\nelse:\n\tself.%s_2 = Student(i, names_and_pref[i], 0)\n\tInterr.vols[i] = self.%s_2'.replace('%s', i))
+            exec('if not hasattr(Interr, \'%s\'):\n\tself.%s = Student(i, names_and_pref[i])\n\tInterr.vols[i] = self.%s\nelse:\n\tself.%s_2 = Student(i, names_and_pref[i])\n\tInterr.vols[i] = self.%s_2'.replace('%s', i))
 
         self.calend = self.calendar()
         self.pref_calendar = self.calend.alloc_volunteers(self.vols)
@@ -160,7 +159,10 @@ class Interr(object):
 
                 for c in range(int(days_num[day])): #  itering for a specific number of times
                     r = random.randint(0, len(_students)-c)
-                    _s = _students[day].pop(r)
+                    try:
+                        _s = _students[day].pop(r)
+                    except IndexError:
+                        _s = _students[day].pop(r-1)
                     while True:
                         if not _s.day:
                             program[day].append(_s) # random choose the student that will 
@@ -201,12 +203,19 @@ class Interr(object):
             else: # else randomically extract the students in the day
 
                 for _s in _missing:
-                    day = random.choice(_free)
-                    program[day[0]] = _s
+                    try:
+                        day = random.choice(_free)
+                    except IndexError:
+                        print('<==== WARNING: There aren\'t enought days for missing students: (missing: {}, free days: {}) ====>'.format(_missing, _free))
+                        return dict()
+                    try:
+                        program[day[0]].append(_s)
+                    except KeyError:
+                        program[day[0]] = [_s]
                     if day[1] == 1:
-                        _free.pop(day)
+                        _free.remove(day)
                     else:
-                        _free[day][1] -= 1
+                        _free[_free.index(day)][1] -= 1
 
         self.__cache__ = program
         return program
@@ -224,12 +233,14 @@ class Interr(object):
         days_vol = {date(2021, 12, 30):[h, j, k, l, m, n, o, p, q, r], date(2021, 12, 31):[s], date(2022, 1, 1):[a, b, c],
                     date(2022, 1, 2):[d], date(2022, 1, 3):[e, f, g], date(2022, 1, 4):[t, u],
                     date(2022, 1, 5):[], date(2022, 1, 6):[v, w], date(2022, 1, 7):[x, y, z]} # preferenze dei volontari
+        
+        days = tuple(days_num.keys())  
 
         def create_sheet_old_algorithm(self):
             self.test()
             while self.ok == False:
                 for day in self.days_vol:
-                    day_n = days_num[day]
+                    day_n = self.days_num[day]
                     priority = 0
                     while len(self.days_vol[day]) > day_n:
                         minor_priority = []
@@ -246,9 +257,9 @@ class Interr(object):
                                 self.vol_priority[priority+1] = []
                                 self.vol_priority[priority+1].append(rem)
                             try: # prova a spostare un interrogato a caso al giorno successivo
-                                self.days_vol[days[days.index(day)+1]].append(rem)
+                                self.days_vol[self.days[self.days.index(day)+1]].append(rem)
                             except IndexError: # sposta l'interrogato al giorno precedente
-                                self.days_vol[days[days.index(day)-1]].append(rem)
+                                self.days_vol[self.days[self.days.index(day)-1]].append(rem)
                         else:
                             priority += 1
                 self._check()
@@ -271,9 +282,14 @@ class Interr(object):
         def _check(self):
             """checks if there are too many volunteers in a day"""
             self.ok = True
-            for day in days_num:
-                if len(self.days_vol[day]) > days_num[day]:
-                    ok = False
+            for day in self.days_num:
+                if len(self.days_vol[day]) > self.days_num[day]:
+                    self.ok = False
 
-interr = Interr()
-print(interr.program)
+if __name__ == '__main__':
+    if input('which alghorithm would you use? (n new/ o old) default \'n\': ') == 'o':
+        interr = Interr.Decrepited
+        interr().create_sheet_old_algorithm()
+    else:
+        interr = Interr()
+        print(interr.program)
