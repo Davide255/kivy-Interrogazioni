@@ -2,7 +2,7 @@ import random
 from datetime import date
 from Widgets.calendar_widget import calendar_data as cal_data
 
-#### DATI DI ESEMPIO ####
+# ============== data ==============
 
 names_and_pref = {
     'Davide':[date(2022, 2, 12), date(2022, 2, 17)], 
@@ -17,9 +17,12 @@ names_and_pref = {
 
 days_num = {date(2022, 2, 12):2, date(2022, 2, 17):1, date(2022, 2, 13):1, date(2022, 2, 19):2, date(2022, 2, 1):1, date(2022, 2, 2):1}
 
-#########################
+# 
+# =================================
 
 days = tuple(days_num.keys())
+
+# ============== structures ==============
 
 class Student: # verrà usata per riorganizzare i dati
     def __init__(self, name: str, preferences: list, priority: int = 0):
@@ -64,20 +67,134 @@ class Property(object):
         return self.fget(instance)
     
     def __set__(self, instance, value):
+        print(instance, value)
         return self.fset(instance,value)
 
-class Interr(object):
+class Alghorithm:
+
+    def __init__(self, calend, pref_calend, vols) -> None:
+        self.calend = calend
+        self.pref_calendar = pref_calend
+        self.vols = vols
+
+    def _itself(self, *args):
+        return self
+
+# ============== Algorithms ==============
+
+class Alghorithms(object):
+
+    class Prova(Alghorithm):
+
+        def __init__(self, calend, pref_calend, vols) -> None:
+            super().__init__(calend, pref_calend, vols)
+            
+        def create_sheet(self, instance=None):
+            return 'ciao'
+
+    class Pref_and_random(Alghorithm):
+            
+        def __init__(self, calend, pref_calend, vols) -> None:
+            super().__init__(calend, pref_calend, vols)
+
+        def create_sheet(self, instance=None):
+            
+            if hasattr(self, '__cache__'):
+                return self.__cache__
+            program = dict()
+            _students = self.pref_calendar.copy() # get a mutable sequence of the preferences
+    
+            for day in self.pref_calendar: # iter single days in preferences dict keys; 
+                                           # dict format = { date(**kwargs) : list( Student(**kwargs) ) }
+                if len(_students[day]) > days_num[day]: # if there are too many students for a single day:
+                        
+                    program[day] = list() # initiallize the day's space to tell python that value will 
+                                            # be a list() object
+
+                    for c in range(int(days_num[day])): #  itering for a specific number of times
+                        r = random.randint(0, len(_students)-c)
+                        try:
+                            _s = _students[day].pop(r)
+                        except IndexError:
+                            _s = _students[day].pop(r-1)
+                        while True:
+                            if not _s.day:
+                                program[day].append(_s) # random choose the student that will 
+                                                        # pass on required day
+                                _s.day = day
+                                break
+                            else:
+                                r = random.randint(0, len(_students)-c)
+                                _s = _students[day].pop(r)
+
+                else: # if students are equal or less for the day those will be satisfied 
+                    program[day] = _students[day]
+
+                _students.pop(day, 0)
+                
+            _missing = list()
+
+            for i in self.vols: # get missing students
+                if not self.vols[i].day:
+                    _missing.append(self.vols[i])
+
+            if len(_missing): # if there are missing
+
+                _free = list() # free days struct = [ [date(**kwargs), int(free_places)] ]
+
+                for d in days_num: # get free days
+                    try:
+                        if len(program[d]) < days_num[d]:
+                            _free.append([d, days_num[d] - len(program[d])])
+                        else:
+                            pass
+                    except KeyError:
+                        _free.append([d, days_num[d]])
+
+                if len(_free) == 1 and len(_missing) == _free[0][1]: # if there is only one day free and day[free_places] students
+                    program[_free[0][0]] = _missing                  # put all those students in this day
+
+                else: # else randomically extract the students in the day
+
+                    for _s in _missing:
+                        try:
+                            day = random.choice(_free)
+                        except IndexError:
+                            print('<==== WARNING: There aren\'t enought days for missing students: (missing: {}, free days: {}) ====>'.format(_missing, _free))
+                            return dict()
+                        try:
+                            program[day[0]].append(_s)
+                        except KeyError:
+                            program[day[0]] = [_s]
+                        if day[1] == 1:
+                            _free.remove(day)
+                        else:
+                            _free[_free.index(day)][1] -= 1
+
+            self.__cache__ = program
+            return program
+
+# ============== root ==============
+
+class Interr:
 
     vols = dict()
 
-    def __init__(self) -> None:
+    def __init__(self, p_alghorithm: Alghorithms = Alghorithms.Pref_and_random) -> None:
         for i in names_and_pref:
             exec('if not hasattr(Interr, \'%s\'):\n\tself.%s = Student(i, names_and_pref[i])\n\tInterr.vols[i] = self.%s\nelse:\n\tself.%s_2 = Student(i, names_and_pref[i])\n\tInterr.vols[i] = self.%s_2'.replace('%s', i))
 
-        self.calend = self.calendar()
+        self.calend = self.Calendar()
         self.pref_calendar = self.calend.alloc_volunteers(self.vols)
+        Interr._alghorithm = p_alghorithm(self.calend, self.pref_calendar, self.vols)
 
-    class calendar():
+        Interr.alghorithm = Property(Interr._alghorithm._itself, self.__init_alghorithm__)
+        Interr.program = Property(Interr._alghorithm.create_sheet, lambda *args: None) # handle to create_sheet function
+
+    def __init_alghorithm__(self, instance, _alghorithm: Alghorithms, *args):
+        Interr._alghorithm = _alghorithm(self.calend, self.pref_calendar, self.vols)
+
+    class Calendar(object):
         
         def __init__(self):
             months = cal_data.get_month_names()
@@ -143,86 +260,17 @@ class Interr(object):
 
         datas = Property(_data_repr, lambda *args: None)
 
-    def create_sheet(self):
-        #self.test() 
-        if hasattr(self, '__cache__'):
-            return self.__cache__
-        program = dict()
-        _students = self.pref_calendar.copy() # get a mutable sequence of the preferences
-        
-        for day in self.pref_calendar: # iter single days in preferences dict keys; 
-                                       # dict format = { date(**kwargs) : list( Student(**kwargs) ) }
-            if len(_students[day]) > days_num[day]: # if there are too many students for a single day:
-                
-                program[day] = list() # initiallize the day's space to tell python that value will 
-                                      # be a list() object
 
-                for c in range(int(days_num[day])): #  itering for a specific number of times
-                    r = random.randint(0, len(_students)-c)
-                    try:
-                        _s = _students[day].pop(r)
-                    except IndexError:
-                        _s = _students[day].pop(r-1)
-                    while True:
-                        if not _s.day:
-                            program[day].append(_s) # random choose the student that will 
-                                                    # pass on required day
-                            _s.day = day
-                            break
-                        else:
-                            r = random.randint(0, len(_students)-c)
-                            _s = _students[day].pop(r)
 
-            else: # if students are equal or less for the day those will be satisfied 
-                program[day] = _students[day]
+if __name__ == '__main__':
 
-            _students.pop(day, 0)
-        
-        _missing = list()
+    interr = Interr(Alghorithms.Prova)
+    interr.alghorithm = Alghorithms.Pref_and_random
+    print(interr.program)
 
-        for i in self.vols: # get missing students
-            if not self.vols[i].day:
-                _missing.append(self.vols[i])
 
-        if len(_missing): # if there are missing
 
-            _free = list() # free days struct = [ [date(**kwargs), int(free_places)] ]
-
-            for d in days_num: # get free days
-                try:
-                    if len(program[d]) < days_num[d]:
-                        _free.append([d, days_num[d] - len(program[d])])
-                    else:
-                        pass
-                except KeyError:
-                    _free.append([d, days_num[d]])
-
-            if len(_free) == 1 and len(_missing) == _free[0][1]: # if there is only one day free and day[free_places] students
-                program[_free[0][0]] = _missing                  # put all those students in this day
-
-            else: # else randomically extract the students in the day
-
-                for _s in _missing:
-                    try:
-                        day = random.choice(_free)
-                    except IndexError:
-                        print('<==== WARNING: There aren\'t enought days for missing students: (missing: {}, free days: {}) ====>'.format(_missing, _free))
-                        return dict()
-                    try:
-                        program[day[0]].append(_s)
-                    except KeyError:
-                        program[day[0]] = [_s]
-                    if day[1] == 1:
-                        _free.remove(day)
-                    else:
-                        _free[_free.index(day)][1] -= 1
-
-        self.__cache__ = program
-        return program
-
-    program = Property(create_sheet, lambda *args: None) # handle to create_sheet function
-
-    class Decrepited:
+class Decrepited:
 
         a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z = "abcdefghjklmnopqrstuvwxyz" # nomi dei volontari
         vol_priority = {0:[a, b, c, d, e, f, g, h, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z]} # priorità dei volontari
@@ -285,11 +333,3 @@ class Interr(object):
             for day in self.days_num:
                 if len(self.days_vol[day]) > self.days_num[day]:
                     self.ok = False
-
-if __name__ == '__main__':
-    if input('which alghorithm would you use? (n new/ o old) default \'n\': ') == 'o':
-        interr = Interr.Decrepited
-        interr().create_sheet_old_algorithm()
-    else:
-        interr = Interr()
-        print(interr.program)
