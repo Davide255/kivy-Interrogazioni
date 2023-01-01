@@ -12,6 +12,8 @@ from GUI.Screens import *
 class MainApp(MDApp):
 
     ''' Start of the application '''
+    
+    data: dict = json.load(open('Data.json', 'r'))
 
     def build(self):
         self.title = 'Interrogazioni'
