@@ -27,6 +27,11 @@
                 "2/7": ["Andrea", "Cristiano"],
                 "2/8": ["Barbara", "Diego"],
                 "2/9": ["Erica", "Barbara"]
+            },
+            "list":{
+                "2/7": ["Andrea", "Cristiano"],
+                "2/8": ["Barbara", "Diego"],
+                "2/9": ["Erica", "Barbara"]
             }
         }
     },
